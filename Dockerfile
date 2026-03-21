@@ -1,0 +1,38 @@
+FROM python:3.11
+
+# 1. Set the working directory to the container root
+WORKDIR /code
+
+# 2. Copy dependency files first (for caching)
+COPY ./requirements.txt /code/requirements.txt
+COPY ./pyproject.toml /code/pyproject.toml
+
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# 3. Install dependencies
+# seaparete installation of torch to avoid issues with cache and large files
+# RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+# NOTE make sure to that requirements.txt does not include torch or fastapi to avoid conflicts
+RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
+
+COPY ./src /code/src
+# We also run 'pip install -e .' to respect your pyproject.toml
+RUN pip install --no-cache-dir -e .
+
+
+
+# 4. Copy the Application Code
+COPY ./face_detection_api /code/face_detection_api
+
+# 5. Set PYTHONPATH
+# This tells Python: "Look for imports in 'src' AND 'face_detection_api'"
+# This fixes "ModuleNotFoundError: No module named 'app'"
+ENV PYTHONPATH="${PYTHONPATH}:/code/src:/code/face_detection_api"
+ENV PYTHONUNBUFFERED=1
+
+# 6. Run the App
+# We point to the nested main.py file
+CMD ["python", "face_detection_api/app/main.py", "--fast", "--workers", "1", "--processes", "1"]
