@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from app.db.db import Base
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
+
+from face_detection_api.app.core.db import Base
 
 
 class User(Base):
