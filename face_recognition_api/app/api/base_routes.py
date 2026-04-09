@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from app.api.v1.routers import v1_router
 from robyn import SubRouter
-
 base_route = SubRouter(__file__, prefix='')
 base_route.include_router(v1_router)
 
