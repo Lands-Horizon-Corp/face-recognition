@@ -9,7 +9,6 @@ def create_user(db: Session, user_id: str, branch_id: str, embedding: str):
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
-    return db_user
 
 
 def get_user_by_embedding(db: Session, embedding: str):
@@ -17,4 +16,4 @@ def get_user_by_embedding(db: Session, embedding: str):
     SELECT 1 - (embedding <=> :embedding) AS similarity
     FROM items;
     """
-    return db.execute(query, {'embedding': embedding}).fetchone()
+    db.execute(query, {'embedding': embedding}).fetchone()

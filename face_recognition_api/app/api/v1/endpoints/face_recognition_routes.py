@@ -5,14 +5,13 @@ from app.core.contants import HTTPStatusCode
 from app.db.user import create_user
 from app.db.user import get_user_by_embedding
 from face_detection.aura_face import create_embedding
+from face_detection_api.app.core.db import SessionLocal
+from face_detection_api.app.utils.image_handling import get_image
 from robyn import Headers
 from robyn import Request
 from robyn import Response
 from robyn import SubRouter
 from robyn.types import FormData
-
-from face_detection_api.app.core.db import SessionLocal
-from face_detection_api.app.utils.image_handling import get_image
 router = SubRouter(__file__, prefix='/api/v1/face')
 
 
