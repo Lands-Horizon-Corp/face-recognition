@@ -9,8 +9,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 
-DATABASE_URL = f'postgresql://{POSTGRES_USERNAME}:{
-    POSTGRES_PASSWORD}@postgres:{POSTGRES_PORT}/{POSTGRES_DB}'
+DATABASE_URL = f'postgresql://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@postgres:{POSTGRES_PORT}/{POSTGRES_DB}'  # noqa: E501
 
 
 engine = create_engine(DATABASE_URL)

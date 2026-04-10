@@ -25,14 +25,14 @@ RUN pip install --no-cache-dir -e .
 
 
 # 4. Copy the Application Code
-COPY ./face_detection_api /code/face_detection_api
+COPY ./face_recognition_api /code/face_recognition_api
 
 # 5. Set PYTHONPATH
-# This tells Python: "Look for imports in 'src' AND 'face_detection_api'"
+# This tells Python: "Look for imports in 'src' AND 'face_recognition_api'"
 # This fixes "ModuleNotFoundError: No module named 'app'"
-ENV PYTHONPATH="${PYTHONPATH}:/code/src:/code/face_detection_api"
+ENV PYTHONPATH="${PYTHONPATH}:/code/src:/code/face_recognition_api"
 ENV PYTHONUNBUFFERED=1
 
 # 6. Run the App
 # We point to the nested main.py file
-CMD ["python", "face_detection_api/app/main.py", "--fast", "--workers", "1", "--processes", "1"]
+CMD ["python", "face_recognition_api/app/main.py", "--fast", "--workers", "1", "--processes", "1"]

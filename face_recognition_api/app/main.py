@@ -18,4 +18,4 @@ def middleware(request: Request):
 
 
 if __name__ == '__main__':
-    app.start(host='0.0.0.0', port=8001)
+    app.start(host='0.0.0.0', port=8080)

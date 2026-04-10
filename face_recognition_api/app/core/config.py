@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from pydantic import model_validator
@@ -70,13 +69,13 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = '/api/v1'
     PROFILING: bool = False
     THRESHOLD: float = 0.5
-    OPENAPI_PATH: str = str(BASE_DIR / 'spoofing_detection_api/openapi.json')
+    OPENAPI_PATH: str = str(BASE_DIR / 'face_recognition_api/openapi.json')
 
     @model_validator(mode='after')
     def set_openapi_path(self):
         if self.IS_LOCAL:
             self.OPENAPI_PATH = str(
-                BASE_DIR / 'spoofing_detection_api/openapi_local.json')
+                BASE_DIR / 'face_recognition_api/openapi_local.json')
         return self
 
     @model_validator(mode='after')
@@ -102,27 +101,27 @@ print(str(BASE_DIR / '.env'))
 settings = Settings()
 
 
-class ModelConfig(BaseSettings):
-    THRESHOLD: float = 0.5
-    TARGET_SIZE: int = 320
+# class ModelConfig(BaseSettings):
+#     THRESHOLD: float = 0.5
+#     TARGET_SIZE: int = 320
 
-    def load_model_params(self, path: str = settings.PARAMS_PATH):
-        try:
-            with open(path) as f:
-                params = json.load(f)
-                self.THRESHOLD = params.get(
-                    'threshold',
-                    self.THRESHOLD,
-                )
-                self.TARGET_SIZE = params.get(
-                    'target_size',
-                    self.TARGET_SIZE,
-                )
+#     def load_model_params(self, path: str = settings.PARAMS_PATH):
+#         try:
+#             with open(path) as f:
+#                 params = json.load(f)
+#                 self.THRESHOLD = params.get(
+#                     'threshold',
+#                     self.THRESHOLD,
+#                 )
+#                 self.TARGET_SIZE = params.get(
+#                     'target_size',
+#                     self.TARGET_SIZE,
+#                 )
 
-        except Exception as e:
-            print(f'Error loading model parameters: {e}')
-        # NOTE: add feature for deleting old files
-        return self
+#         except Exception as e:
+#             print(f'Error loading model parameters: {e}')
+#         # NOTE: add feature for deleting old files
+#         return self
 
 
-model_config = ModelConfig()
+# model_config = ModelConfig()

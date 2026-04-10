@@ -1,21 +1,26 @@
 services:
   robyn:
-    image: python:3.11-slim
     container_name: robyn-api
-    working_dir: /app
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
-      - ./app:/app
+      - ./face_recognition_api:/code/face_recognition_api
+      - ./src:/code/src
+      - ./models:/code/models
     ports:
       - "8080:8080"
     environment:
       - DATABASE_URL=postgresql://admin:password@postgres:5432/robyn_db
-      - MINIO_ENDPOINT=minio:9000
-      - MINIO_ACCESS_KEY=minioadmin
-      - MINIO_SECRET_KEY=minioadmin
-    command: bash -c "pip install robyn python-multipart psycopg2-binary boto3 && python main.py"
+      - POSTGRES_USERNAME=admin
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=robyn_db
+      - APP_ENV=development
+      - IS_LOCAL=true
+
     depends_on:
       - postgres
-      - minio
     networks:
       - app-network
 
@@ -27,7 +32,7 @@ services:
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=robyn_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db-setup/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -47,24 +52,9 @@ services:
     networks:
       - app-network
 
-  minio:
-    image: minio/minio:latest
-    container_name: minio-storage
-    environment:
-      - MINIO_ROOT_USER=minioadmin
-      - MINIO_ROOT_PASSWORD=minioadmin
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    volumes:
-      - minio_data:/minio_data
-    command: server /minio_data --console-address ":9001"
-    networks:
-      - app-network
 
 volumes:
   postgres_data:
-  minio_data:
 
 networks:
   app-network:
