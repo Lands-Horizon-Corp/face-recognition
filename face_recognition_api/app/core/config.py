@@ -61,7 +61,7 @@ allowed_origins_development = [
 
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = 'Spoof Detection API'
+    PROJECT_NAME: str = 'Face Recognition API'
     APP_ENV: str = 'production'
     IS_LOCAL: bool = False
     CORS_ALLOW_ORIGINS: list[str] = []
@@ -70,6 +70,9 @@ class Settings(BaseSettings):
     PROFILING: bool = False
     THRESHOLD: float = 0.5
     OPENAPI_PATH: str = str(BASE_DIR / 'face_recognition_api/openapi.json')
+    FACE_DETECTOR_MODEL_PATH: str = str(
+        BASE_DIR / 'face_recognition_api/models/face_detector.onnx')
+    FACE_DETECTOR_DOWNLOAD_URL_ENV: str = ''
 
     @model_validator(mode='after')
     def set_openapi_path(self):

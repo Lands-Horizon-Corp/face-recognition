@@ -2,8 +2,11 @@ from __future__ import annotations
 
 from app.core.contants import ErrorCode
 from app.core.contants import HTTPStatusCode
+from app.core.db import SessionLocal
 from app.db.user import create_user
 from app.db.user import get_user_by_embedding
+from app.services.detect_face_service import face_detector
+from app.utils.image_handling import get_image
 from face_recognition.aura_face import create_embedding
 from robyn import Headers
 from robyn import Request
@@ -11,8 +14,7 @@ from robyn import Response
 from robyn import SubRouter
 from robyn.types import FormData
 
-from face_recognition_api.app.core.db import SessionLocal
-from face_recognition_api.app.utils.image_handling import get_image
+
 router = SubRouter(__file__, prefix='/api/v1/face')
 
 
@@ -41,7 +43,21 @@ async def add_face(request: Request, headers: Headers, form_data: FormData):
         response.status_code = HTTPStatusCode.BAD_REQUEST.value
         return {'error': ErrorCode.MISSING_USER_OR_BRANCH_ID.value}
 
-    embedding = create_embedding(image)
+    faces = face_detector.find_faces(image)
+
+    if not faces:
+        response.status_code = HTTPStatusCode.BAD_REQUEST.value
+        return {'error': ErrorCode.NO_FACE.value}
+
+    if len(faces) > 1:
+        response.status_code = HTTPStatusCode.BAD_REQUEST.value
+        return {'error': ErrorCode.MULTIPLE_FACES.value}
+
+    face = faces[0]
+    left, top, right, bottom = face['bbox']
+    face_image = image.crop((left, top, right, bottom))
+
+    embedding = create_embedding(face_image)
     with SessionLocal() as db:
         new_user = create_user(db, user_id, branch_id, embedding)
 
@@ -69,7 +85,20 @@ async def identify_face(request: Request, headers: Headers):
         response.status_code = HTTPStatusCode.BAD_REQUEST.value
         return {'error': ErrorCode.INVALID_IMAGE.value}
 
-    embedding = create_embedding(image)
+    faces = face_detector.find_faces(image)
+    if not faces:
+        response.status_code = HTTPStatusCode.BAD_REQUEST.value
+        return {'error': ErrorCode.NO_FACE.value}
+
+    if len(faces) > 1:
+        response.status_code = HTTPStatusCode.BAD_REQUEST.value
+        return {'error': ErrorCode.MULTIPLE_FACES.value}
+
+    face = faces[0]
+    left, top, right, bottom = face['bbox']
+    face_image = image.crop((left, top, right, bottom))
+
+    embedding = create_embedding(face_image)
     with SessionLocal() as db:
         user = get_user_by_embedding(db, embedding)
     if user is None:

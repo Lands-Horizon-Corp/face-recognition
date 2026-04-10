@@ -1,15 +1,13 @@
 from __future__ import annotations
 
+from app.core.db import Base
 from sqlalchemy import Column
-from sqlalchemy import Integer
 from sqlalchemy import String
-
-from face_recognition_api.app.core.db import Base
 
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = 'user_faces'
 
-    user_id = Column(Integer, primary_key=True, index=True)
-    branch_id = Column(String, index=True)
+    user_id = Column(String)
+    branch_id = Column(String)
     embedding = Column(String)
