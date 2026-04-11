@@ -6,6 +6,8 @@ import onnxruntime as ort
 from app.core.config import settings
 from PIL import Image
 
+# Ultra-Light-Fast-Generic-Face-Detector-1MB
+
 
 class FaceDetectorModel:
     def __init__(self, confidence_cutoff=0.7):
@@ -194,5 +196,4 @@ class FaceDetectorModel:
         return faces
 
 
-# Singleton instance
 face_detector = FaceDetectorModel()

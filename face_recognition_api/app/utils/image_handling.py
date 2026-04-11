@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import io
+
 from filetype import filetype
+from PIL import Image
 from robyn import Request
 
 
@@ -18,3 +21,15 @@ def get_image(request: Request):
     if not is_image_file(files[first_key]):
         return None
     return files[first_key]
+
+
+def open_image(upload_file: bytes) -> Image:
+    try:
+        image = Image.open(io.BytesIO(upload_file)).convert('RGB')
+        # Save the image for debugging purposes
+        # image.save('./spoofing_detection_api/debug_image.jpg')
+    except Exception as e:
+        raise ValueError(
+            f"Invalid image file, file type detected:"
+            f" {type(upload_file)}") from e
+    return image

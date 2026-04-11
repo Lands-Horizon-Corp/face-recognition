@@ -12,6 +12,8 @@ class DownloadFile:
         self.file_path = file_path
 
     async def execute(self):
+
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         if 'drive.google.com' in self.file_url:
             gdown.download(self.file_url, self.file_path, quiet=False)
         else:

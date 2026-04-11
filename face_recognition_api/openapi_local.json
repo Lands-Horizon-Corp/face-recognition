@@ -28,9 +28,9 @@
                     "type": "string",
                     "description": "A unique identifier for the user."
                   },
-                  "branch_id": {
+                  "group_id": {
                     "type": "string",
-                    "description": "An identifier for the branch or location."
+                    "description": "An identifier for the group associated with the user."
                   },
                   "image": {
                     "type": "string",
@@ -38,7 +38,7 @@
                     "description": "An image file containing the face to be added."
                   }
                 },
-                "required": ["user_id", "branch_id", "image"]
+                "required": ["user_id", "group_id", "image"]
               }
             }
           }
@@ -113,7 +113,7 @@
                     "user_id": {
                       "type": "string"
                     },
-                    "branch_id": {
+                    "group_id": {
                       "type": "string"
                     },
                     "message": {

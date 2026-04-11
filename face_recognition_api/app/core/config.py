@@ -48,6 +48,7 @@ allowed_origins_production = [
 ]
 
 allowed_origins_development = [
+    'http://localhost:8080',
     'http://localhost:8000',
     'http://localhost:8001',
     'http://localhost:3000',

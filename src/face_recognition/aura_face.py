@@ -19,9 +19,8 @@ face_app = FaceAnalysis(
 face_app.prepare(ctx_id=0, det_size=(640, 640))
 
 
-def create_embedding(image: bytes) -> str:
-    img = Image.open(io.BytesIO(image))
-    cv2_image = np.array(img.convert('RGB'))
+def create_embedding(image: Image) -> str:
+    cv2_image = np.array(image.convert('RGB'))
     cv2_image = cv2_image[:, :, ::-1]
     faces = face_app.get(cv2_image)
     embedding = faces[0].normed_embedding
@@ -29,7 +28,8 @@ def create_embedding(image: bytes) -> str:
 
 
 if __name__ == '__main__':
-    with open('./src/face_detection/test_image.jpg', 'rb') as f:
+    with open('./src/face_recognition/test_image.jpg', 'rb') as f:
         img_bytes = f.read()
-    embedding = create_embedding(img_bytes)
+    img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+    embedding = create_embedding(img)
     print(embedding)

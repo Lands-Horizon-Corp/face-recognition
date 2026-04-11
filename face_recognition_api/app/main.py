@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.api.base_routes import base_route
+from app.core import startup
 from app.core.config import settings
 from app.core.security import limiter
 from robyn import ALLOW_CORS
@@ -15,6 +16,12 @@ app.include_router(base_route)
 @app.before_request()
 def middleware(request: Request):
     return limiter.handle_request(app, request)
+
+
+@app.startup_handler
+async def run_on_startup():
+    print('Running startup tasks...')
+    await startup.download_models()
 
 
 if __name__ == '__main__':
