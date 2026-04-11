@@ -16,6 +16,8 @@ from robyn import Response
 from robyn import SubRouter
 from robyn.types import FormData
 
+from face_recognition_api.app.domains.faces import Directions
+
 router = SubRouter(__file__, prefix='/api/v1/face')
 
 
@@ -26,17 +28,10 @@ async def add_face(request: Request, form_data: FormData):
     and group_id in the form data.
      - user_id: A unique identifier for the user.
      - group_id: An identifier for the group associated with the user.
-     - image: An image file containing the face to be added.
+     - front: An image file containing the front profile.
+     - left: An image file containing the left profile.
+     - right: An image file containing the right profile.
     """
-
-    image = get_image(request)
-    if not image:
-        return Response(
-            headers={'Content-Type': 'application/json'},
-            status_code=HTTPStatusCode.BAD_REQUEST.value,
-            description=json.dumps({'error': ErrorCode.INVALID_IMAGE.value})
-        )
-
     user_id: str = form_data.get('user_id', [None])
     group_id: str = form_data.get('group_id', [None])
 
@@ -49,28 +44,46 @@ async def add_face(request: Request, form_data: FormData):
             description=json.dumps(
                 {'error': ErrorCode.MISSING_USER_OR_GROUP_ID.value})
         )
-    image = open_image(image)
-    faces = face_detector.find_faces(image)
 
-    if not faces:
-        return Response(
-            headers={'Content-Type': 'application/json'},
-            status_code=HTTPStatusCode.BAD_REQUEST.value,
-            description=json.dumps({'error': ErrorCode.NO_FACE.value})
-        )
+    required_keys = list(Directions)
+    uploaded_files = request.files
 
-    if len(faces) > 1:
-        return Response(
-            headers={'Content-Type': 'application/json'},
-            status_code=HTTPStatusCode.BAD_REQUEST.value,
-            description=json.dumps({'error': ErrorCode.MULTIPLE_FACES.value})
-        )
+    for key in required_keys:
+        if key not in uploaded_files:
+            return Response(
+                headers={'Content-Type': 'application/json'},
+                status_code=HTTPStatusCode.BAD_REQUEST.value,
+                description=json.dumps(
+                    {'error': f'Missing required image: {key}'})
+            )
+    embeddings = {}
 
-    face = faces[0]
-    left, top, right, bottom = face['bbox']
-    face_image = image.crop((left, top, right, bottom))
+    for key in required_keys:
+        img_bytes = uploaded_files[key]
+        img = open_image(img_bytes)
+        faces = face_detector.find_faces(img)
 
-    embeddings = create_embedding(face_image)
+        if not faces:
+            return Response(
+                headers={'Content-Type': 'application/json'},
+                status_code=HTTPStatusCode.BAD_REQUEST.value,
+                description=json.dumps(
+                    {'error': ErrorCode.NO_FACE.value, 'direction': key})
+            )
+
+        if len(faces) > 1:
+            return Response(
+                headers={'Content-Type': 'application/json'},
+                status_code=HTTPStatusCode.BAD_REQUEST.value,
+                description=json.dumps(
+                    {'error': ErrorCode.MULTIPLE_FACES.value, 'direction': key})
+            )
+
+        face = faces[0]
+        left, top, right, bottom = face['bbox']
+        face_image = img.crop((left, top, right, bottom))
+        embeddings[key] = create_embedding(face_image)
+
     with SessionLocal() as db:
         new_user = create_user(db, user_id, group_id, embeddings)
 
@@ -81,10 +94,11 @@ async def add_face(request: Request, form_data: FormData):
             description=json.dumps(
                 {'error': ErrorCode.FAILED_TO_CREATE_USER.value})
         )
+    return {'id': str(new_user.id)}
 
 
-@router.post('/identify')
-async def identify_face(request: Request):
+@router.post('/identify/')
+async def identify_face(request: Request, group_id: str | None = None):
     """
     Identify a face from the uploaded image. Expects an image file in the request.
      - image: An image file containing the face to be identified.
@@ -123,7 +137,7 @@ async def identify_face(request: Request):
 
     embeddings = create_embedding(face_image)
     with SessionLocal() as db:
-        user = get_user_by_embedding(db, embeddings)
+        user = get_user_by_embedding(db, embeddings, group_id)
     if user is None:
         return {'message': ErrorCode.USER_NOT_FOUND.value}
     return {'user_id': user.user_id, 'group_id': user.group_id}

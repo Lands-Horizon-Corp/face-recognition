@@ -32,13 +32,23 @@
                     "type": "string",
                     "description": "An identifier for the group associated with the user."
                   },
-                  "image": {
+                  "front": {
                     "type": "string",
                     "format": "binary",
                     "description": "An image file containing the face to be added."
+                  },
+                  "left": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "An image file containing the left profile of the face to be added."
+                  },
+                  "right": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "An image file containing the right profile of the face to be added."
                   }
                 },
-                "required": ["user_id", "group_id", "image"]
+                "required": ["user_id", "group_id", "front", "left", "right"]
               }
             }
           }
