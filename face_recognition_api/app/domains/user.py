@@ -14,4 +14,4 @@ class UsersInfo(Base):
     user_id = Column(UUID(as_uuid=True))
     group_id = Column(UUID(as_uuid=True))
 
-    faces = relationship('Faces', back_populates='user_info')
+    faces = relationship('Faces', back_populates='users_info')

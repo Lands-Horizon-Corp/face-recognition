@@ -29,7 +29,7 @@ def get_user_by_embedding(db: Session, embeddings: str, group_id: str | None = N
     query = """
     SELECT 1 - (embeddings <=> :embeddings) AS similarity
     FROM faces
-    JOIN users_info ON faces.users_info_id = users_info.id;
+    JOIN users_info ON faces.users_info_id = users_info.id
 
     """
     if group_id is not None:

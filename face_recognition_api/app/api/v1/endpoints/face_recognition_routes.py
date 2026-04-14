@@ -7,6 +7,7 @@ from app.core.contants import HTTPStatusCode
 from app.core.db import SessionLocal
 from app.db.user import create_user
 from app.db.user import get_user_by_embedding
+from app.domains.faces import Directions
 from app.services.detect_face_service import face_detector
 from app.utils.image_handling import get_image
 from app.utils.image_handling import open_image
@@ -16,9 +17,17 @@ from robyn import Response
 from robyn import SubRouter
 from robyn.types import FormData
 
-from face_recognition_api.app.domains.faces import Directions
-
 router = SubRouter(__file__, prefix='/api/v1/face')
+
+
+def parse_robyn_files(uploaded_files: dict, expected_keys: list) -> dict:
+    result = {}
+    for expected in expected_keys:
+        match = next((k for k in uploaded_files.keys()
+                     if expected in k.lower()), None)
+        if match:
+            result[expected] = uploaded_files[match]
+    return result
 
 
 @router.post('/add')
@@ -37,6 +46,8 @@ async def add_face(request: Request, form_data: FormData):
 
     print(f"user_id: {user_id}",
           f"group_id: {group_id}")
+    print('Files received:', request.files.keys())
+    print('Form data received:', form_data.keys())
     if not user_id or not group_id:
         return Response(
             headers={'Content-Type': 'application/json'},
@@ -45,11 +56,12 @@ async def add_face(request: Request, form_data: FormData):
                 {'error': ErrorCode.MISSING_USER_OR_GROUP_ID.value})
         )
 
-    required_keys = list(Directions)
-    uploaded_files = request.files
+    required_keys = list(d.value for d in Directions)
+
+    extracted_files = parse_robyn_files(request.files, required_keys)
 
     for key in required_keys:
-        if key not in uploaded_files:
+        if key not in extracted_files:
             return Response(
                 headers={'Content-Type': 'application/json'},
                 status_code=HTTPStatusCode.BAD_REQUEST.value,
@@ -59,7 +71,7 @@ async def add_face(request: Request, form_data: FormData):
     embeddings = {}
 
     for key in required_keys:
-        img_bytes = uploaded_files[key]
+        img_bytes = extracted_files[key]
         img = open_image(img_bytes)
         faces = face_detector.find_faces(img)
 

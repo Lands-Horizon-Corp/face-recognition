@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 
 from app.core.db import Base
-from pgvector import Vector
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column
 from sqlalchemy import Enum
 from sqlalchemy import ForeignKey
@@ -26,4 +26,4 @@ class Faces(Base):
     direction = Column(Enum(Directions))
     embeddings = Column(Vector(512))
 
-    user_info = relationship('UsersInfo', back_populates='faces')
+    users_info = relationship('UsersInfo', back_populates='faces')
