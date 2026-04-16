@@ -32,6 +32,10 @@
                     "type": "string",
                     "description": "An identifier for the group associated with the user."
                   },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Additional metadata about the user (optional)."
+                  },
                   "front": {
                     "type": "string",
                     "format": "binary",

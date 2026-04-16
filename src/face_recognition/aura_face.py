@@ -19,7 +19,7 @@ face_app = FaceAnalysis(
 face_app.prepare(ctx_id=0, det_size=(640, 640))
 
 
-def create_embedding(image: Image) -> str:
+def create_embedding(image: Image) -> np.ndarray:
     cv2_image = np.array(image.convert('RGB'))
     cv2_image = cv2_image[:, :, ::-1]
     faces = face_app.get(cv2_image)

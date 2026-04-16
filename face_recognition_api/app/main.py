@@ -3,10 +3,13 @@ from __future__ import annotations
 from app.api.base_routes import base_route
 from app.core import startup
 from app.core.config import settings
+from app.core.db import engine
 from app.core.security import limiter
+from app.domains import Base
 from robyn import ALLOW_CORS
 from robyn import Request
 from robyn import Robyn
+Base.metadata.create_all(bind=engine)
 
 app = Robyn(__file__, openapi_file_path=settings.OPENAPI_PATH)
 ALLOW_CORS(app, origins=settings.CORS_ALLOW_ORIGINS)

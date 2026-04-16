@@ -5,7 +5,6 @@ from app.core.env import POSTGRES_PASSWORD
 from app.core.env import POSTGRES_PORT
 from app.core.env import POSTGRES_USERNAME
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 
@@ -14,6 +13,3 @@ DATABASE_URL = f'postgresql://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@postgres:{
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-Base = declarative_base()

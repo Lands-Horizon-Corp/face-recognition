@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 
 from app.core.contants import ErrorCode
 from app.core.contants import HTTPStatusCode
@@ -15,6 +16,7 @@ from face_recognition.aura_face import create_embedding
 from robyn import Request
 from robyn import Response
 from robyn import SubRouter
+from robyn.robyn import QueryParams
 from robyn.types import FormData
 
 router = SubRouter(__file__, prefix='/api/v1/face')
@@ -57,6 +59,7 @@ async def add_face(request: Request, form_data: FormData):
         )
 
     required_keys = list(d.value for d in Directions)
+    print(f"Looking for required keys in files: {required_keys}")
 
     extracted_files = parse_robyn_files(request.files, required_keys)
 
@@ -68,7 +71,7 @@ async def add_face(request: Request, form_data: FormData):
                 description=json.dumps(
                     {'error': f'Missing required image: {key}'})
             )
-    embeddings = {}
+    embeddings: dict[Directions, str] = {}
 
     for key in required_keys:
         img_bytes = extracted_files[key]
@@ -94,23 +97,23 @@ async def add_face(request: Request, form_data: FormData):
         face = faces[0]
         left, top, right, bottom = face['bbox']
         face_image = img.crop((left, top, right, bottom))
-        embeddings[key] = create_embedding(face_image)
+        embeddings[Directions(key)] = create_embedding(face_image)
 
     with SessionLocal() as db:
         new_user = create_user(db, user_id, group_id, embeddings)
 
-    if new_user is None:
-        return Response(
-            headers={'Content-Type': 'application/json'},
-            status_code=HTTPStatusCode.INTERNAL_SERVER_ERROR.value,
-            description=json.dumps(
-                {'error': ErrorCode.FAILED_TO_CREATE_USER.value})
-        )
-    return {'id': str(new_user.id)}
+        if new_user is None:
+            return Response(
+                headers={'Content-Type': 'application/json'},
+                status_code=HTTPStatusCode.INTERNAL_SERVER_ERROR.value,
+                description=json.dumps(
+                    {'error': ErrorCode.FAILED_TO_CREATE_USER.value})
+            )
+        return {'id': str(new_user.id)}
 
 
-@router.post('/identify/')
-async def identify_face(request: Request, group_id: str | None = None):
+@router.post('/identify')
+async def identify_face(request: Request, query_params: QueryParams):
     """
     Identify a face from the uploaded image. Expects an image file in the request.
      - image: An image file containing the face to be identified.
@@ -119,6 +122,18 @@ async def identify_face(request: Request, group_id: str | None = None):
      - user_id: The unique identifier for the user associated with the identified face.
      - group_id: The identifier for the group associated with the identified face.
     """
+    group_id = query_params.get('group_id', default=None)
+
+    parsed_group_id = None
+    if group_id:
+        try:
+            parsed_group_id = uuid.UUID(group_id)
+        except ValueError:
+            return Response(
+                headers={'Content-Type': 'application/json'},
+                status_code=HTTPStatusCode.BAD_REQUEST.value,
+                description=json.dumps({'error': 'Invalid group_id format'})
+            )
 
     image = get_image(request)
     if not image:
@@ -149,7 +164,12 @@ async def identify_face(request: Request, group_id: str | None = None):
 
     embeddings = create_embedding(face_image)
     with SessionLocal() as db:
-        user = get_user_by_embedding(db, embeddings, group_id)
-    if user is None:
-        return {'message': ErrorCode.USER_NOT_FOUND.value}
-    return {'user_id': user.user_id, 'group_id': user.group_id}
+        user = get_user_by_embedding(db, embeddings, parsed_group_id)
+        if user is None:
+            return {'message': ErrorCode.USER_NOT_FOUND.value}
+        return {
+            'id': user.id,
+            'user_id': user.user_id,
+            'group_id': user.group_id,
+            'metadata': user.user_metadata
+        }
