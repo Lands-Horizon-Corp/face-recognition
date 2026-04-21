@@ -8,7 +8,6 @@ from app.core.contants import HTTPStatusCode
 from app.core.db import SessionLocal
 from app.db.user import create_user
 from app.db.user import get_user_by_embedding
-from app.domains.faces import Directions
 from app.services.detect_face_service import face_detector
 from app.utils.image_handling import get_image
 from app.utils.image_handling import open_image
@@ -39,13 +38,27 @@ async def add_face(request: Request, form_data: FormData):
     and group_id in the form data.
      - user_id: A unique identifier for the user.
      - group_id: An identifier for the group associated with the user.
-     - front: An image file containing the front profile.
-     - left: An image file containing the left profile.
-     - right: An image file containing the right profile.
+     - metadata: Additional json metadata about the user (optional).
+     - image: An image file containing the face to be added.
+     - direction: The direction of the face in the image (e.g., front, left, right).
+    Returns the unique identifier of the newly created user or an error if the
+     - id: The unique identifier for the newly created user.
     """
     user_id: str = form_data.get('user_id', [None])
     group_id: str = form_data.get('group_id', [None])
+    direction: str = form_data.get('direction', [None])
+    metadata: str = form_data.get('metadata', [None])
 
+    if metadata:
+        try:
+            metadata = json.loads(metadata)
+        except json.JSONDecodeError:
+            return Response(
+                headers={'Content-Type': 'application/json'},
+                status_code=HTTPStatusCode.BAD_REQUEST.value,
+                description=json.dumps(
+                    {'error': ErrorCode.INVALID_METADATA_FORMAT.value})
+            )
     print(f"user_id: {user_id}",
           f"group_id: {group_id}")
     print('Files received:', request.files.keys())
@@ -58,49 +71,41 @@ async def add_face(request: Request, form_data: FormData):
                 {'error': ErrorCode.MISSING_USER_OR_GROUP_ID.value})
         )
 
-    required_keys = list(d.value for d in Directions)
-    print(f"Looking for required keys in files: {required_keys}")
+    image = get_image(request)
+    if not image:
+        return Response(
+            headers={'Content-Type': 'application/json'},
+            status_code=HTTPStatusCode.BAD_REQUEST.value,
+            description=json.dumps({'error': ErrorCode.INVALID_IMAGE.value})
+        )
 
-    extracted_files = parse_robyn_files(request.files, required_keys)
+    img = open_image(image)
+    faces = face_detector.find_faces(img)
 
-    for key in required_keys:
-        if key not in extracted_files:
-            return Response(
-                headers={'Content-Type': 'application/json'},
-                status_code=HTTPStatusCode.BAD_REQUEST.value,
-                description=json.dumps(
-                    {'error': f'Missing required image: {key}'})
-            )
-    embeddings: dict[Directions, str] = {}
+    if not faces:
+        return Response(
+            headers={'Content-Type': 'application/json'},
+            status_code=HTTPStatusCode.BAD_REQUEST.value,
+            description=json.dumps(
+                {'error': ErrorCode.NO_FACE.value})
+        )
 
-    for key in required_keys:
-        img_bytes = extracted_files[key]
-        img = open_image(img_bytes)
-        faces = face_detector.find_faces(img)
+    if len(faces) > 1:
+        return Response(
+            headers={'Content-Type': 'application/json'},
+            status_code=HTTPStatusCode.BAD_REQUEST.value,
+            description=json.dumps(
+                {'error': ErrorCode.MULTIPLE_FACES.value})
+        )
 
-        if not faces:
-            return Response(
-                headers={'Content-Type': 'application/json'},
-                status_code=HTTPStatusCode.BAD_REQUEST.value,
-                description=json.dumps(
-                    {'error': ErrorCode.NO_FACE.value, 'direction': key})
-            )
-
-        if len(faces) > 1:
-            return Response(
-                headers={'Content-Type': 'application/json'},
-                status_code=HTTPStatusCode.BAD_REQUEST.value,
-                description=json.dumps(
-                    {'error': ErrorCode.MULTIPLE_FACES.value, 'direction': key})
-            )
-
-        face = faces[0]
-        left, top, right, bottom = face['bbox']
-        face_image = img.crop((left, top, right, bottom))
-        embeddings[Directions(key)] = create_embedding(face_image)
+    face = faces[0]
+    left, top, right, bottom = face['bbox']
+    face_image = img.crop((left, top, right, bottom))
+    embeddings = create_embedding(face_image)
 
     with SessionLocal() as db:
-        new_user = create_user(db, user_id, group_id, embeddings)
+        new_user = create_user(db, user_id, group_id,
+                               direction, embeddings, metadata)
 
         if new_user is None:
             return Response(

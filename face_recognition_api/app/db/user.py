@@ -3,7 +3,6 @@ from __future__ import annotations
 import numpy as np
 from app.domains.faces import Faces
 from app.domains.user import UsersInfo
-from PIL.ImageCms import Direction
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -11,24 +10,31 @@ from sqlalchemy.orm import Session
 def create_user(db: Session,
                 user_id: str,
                 group_id: str,
-                embeddings: dict[Direction, str]) -> UsersInfo:
-    db_user = UsersInfo(user_id=user_id, group_id=group_id)
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+                direction: str,
+                embeddings: np.ndarray,
+                metadata: dict | None) -> UsersInfo:
 
-    for direction, embedding in embeddings.items():
-        db_face = Faces(users_info_id=db_user.id,
-                        direction=direction.value,
-                        embeddings=embedding)
-        db.add(db_face)
+    db_user = db.query(UsersInfo).filter(UsersInfo.user_id == user_id).first()
+    if not db_user:
+        db_user = UsersInfo(
+            user_id=user_id, group_id=group_id, user_metadata=metadata)
+        db.add(db_user)
         db.commit()
-        db.refresh(db_face)
+        db.refresh(db_user)
+
+    db_face = Faces(users_info_id=db_user.id,
+                    direction=direction,
+                    embeddings=embeddings.tolist())
+    db.add(db_face)
+    db.commit()
+    db.refresh(db_face)
 
     return db_user
 
 
-def get_user_by_embedding(db: Session, embeddings: np.ndarray, group_id: str | None = None) -> UsersInfo | None:  # noqa: E501
+def get_user_by_embedding(db: Session,
+                          embeddings: np.ndarray,
+                          group_id: str | None = None) -> UsersInfo | None:  # noqa: E501
 
     query = """SELECT
             users_info.id,

@@ -32,27 +32,21 @@
                     "type": "string",
                     "description": "An identifier for the group associated with the user."
                   },
-                  "metadata": {
-                    "type": "object",
-                    "description": "Additional metadata about the user (optional)."
-                  },
-                  "front": {
+                  "image": {
                     "type": "string",
                     "format": "binary",
                     "description": "An image file containing the face to be added."
                   },
-                  "left": {
+                  "direction": {
                     "type": "string",
-                    "format": "binary",
-                    "description": "An image file containing the left profile of the face to be added."
+                    "description": "The direction of the face in the image (e.g., front, left, right)."
                   },
-                  "right": {
-                    "type": "string",
-                    "format": "binary",
-                    "description": "An image file containing the right profile of the face to be added."
+                  "metadata": {
+                    "type": "object",
+                    "description": "Additional metadata about the user (optional)."
                   }
                 },
-                "required": ["user_id", "group_id", "front", "left", "right"]
+                "required": ["user_id", "group_id", "image", "direction"]
               }
             }
           }
