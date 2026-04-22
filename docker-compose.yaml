@@ -19,7 +19,6 @@ services:
       - APP_ENV=development
       - IS_LOCAL=true
 
-
     depends_on:
       - postgres
     networks:
@@ -47,6 +46,7 @@ services:
       - PGADMIN_DEFAULT_EMAIL=admin@example.com
       - PGADMIN_DEFAULT_PASSWORD=admin
       - PGADMIN_CONFIG_ENHANCED_IAM_LOGGING=True
+      - PGADMIN_CONFIG_MAX_LOGIN_ATTEMPTS=0
     ports:
       - "5050:80"
     volumes:
@@ -55,7 +55,6 @@ services:
       - postgres
     networks:
       - app-network
-
 
 volumes:
   postgres_data:

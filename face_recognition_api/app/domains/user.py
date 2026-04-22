@@ -5,13 +5,13 @@ from typing import Any
 from typing import TYPE_CHECKING
 
 from app.core.base import Base
+from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
-
 if TYPE_CHECKING:
     from app.domains.faces import Faces
 
@@ -31,3 +31,14 @@ class UsersInfo(Base):
 
     faces: Mapped[list[Faces]] = relationship(
         'Faces', back_populates='users_info')
+
+
+class UserSimilarityResult(BaseModel):
+    id: uuid.UUID
+    user_id: uuid.UUID
+    group_id: uuid.UUID
+    user_metadata: dict[str, Any] | None
+    similarity: float
+
+    class Config:
+        from_attributes = True

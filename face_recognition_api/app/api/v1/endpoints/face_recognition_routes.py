@@ -10,7 +10,6 @@ from app.core.middleware import header_builder
 from app.core.middleware import resolve_origin
 from app.db.user import create_user
 from app.db.user import get_user_by_embedding
-from app.services.detect_face_service import face_detector
 from app.utils.image_handling import get_image
 from app.utils.image_handling import open_image
 from face_recognition.aura_face import create_embedding
@@ -100,28 +99,22 @@ async def add_face(request: Request, form_data: FormData):
         )
 
     img = open_image(image)
-    faces = face_detector.find_faces(img)
 
-    if not faces:
+    try:
+        embeddings = create_embedding(img)
+    except ValueError as e:
         return Response(
             headers=headers,
             status_code=HTTPStatusCode.BAD_REQUEST.value,
-            description=json.dumps(
-                {'error': ErrorCode.NO_FACE.value})
+            description=json.dumps({'error': str(e)})
         )
 
-    if len(faces) > 1:
+    if embeddings is None:
         return Response(
             headers=headers,
             status_code=HTTPStatusCode.BAD_REQUEST.value,
-            description=json.dumps(
-                {'error': ErrorCode.MULTIPLE_FACES.value})
+            description=json.dumps({'error': ErrorCode.NO_FACE.value})
         )
-
-    face = faces[0]
-    left, top, right, bottom = face['bbox']
-    face_image = img.crop((left, top, right, bottom))
-    embeddings = create_embedding(face_image)
 
     with SessionLocal() as db:
         new_user = create_user(db, user_id, group_id,
@@ -176,32 +169,28 @@ async def identify_face(request: Request, query_params: QueryParams):
             description=json.dumps({'error': ErrorCode.INVALID_IMAGE.value})
         )
     image = open_image(image)
-    faces = face_detector.find_faces(image)
-    if not faces:
+    try:
+        embeddings = create_embedding(image)
+    except ValueError as e:
+        return Response(
+            headers=headers,
+            status_code=HTTPStatusCode.BAD_REQUEST.value,
+            description=json.dumps({'error': str(e)})
+        )
+
+    if embeddings is None:
         return Response(
             headers=headers,
             status_code=HTTPStatusCode.BAD_REQUEST.value,
             description=json.dumps({'error': ErrorCode.NO_FACE.value})
         )
 
-    if len(faces) > 1:
-        return Response(
-            headers=headers,
-            status_code=HTTPStatusCode.BAD_REQUEST.value,
-            description=json.dumps({'error': ErrorCode.MULTIPLE_FACES.value})
-        )
-
-    face = faces[0]
-    left, top, right, bottom = face['bbox']
-    face_image = image.crop((left, top, right, bottom))
-
-    embeddings = create_embedding(face_image)
     with SessionLocal() as db:
         user = get_user_by_embedding(db, embeddings, parsed_group_id)
         if user is None:
             return Response(
                 headers=headers,
-                status_code=HTTPStatusCode.NOT_FOUND.value,
+                status_code=HTTPStatusCode.BAD_REQUEST.value,
                 description=json.dumps(
                     {'error': ErrorCode.USER_NOT_FOUND.value})
             )
@@ -213,6 +202,8 @@ async def identify_face(request: Request, query_params: QueryParams):
                     'id': user.id,
                     'user_id': user.user_id,
                     'group_id': user.group_id,
-                    'metadata': user.user_metadata
-                }
+                    'metadata': user.user_metadata,
+                    'similarity': user.similarity
+                },
+                default=str
             ))
