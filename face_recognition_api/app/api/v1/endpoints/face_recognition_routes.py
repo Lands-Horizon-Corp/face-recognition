@@ -117,9 +117,16 @@ async def add_face(request: Request, form_data: FormData):
         )
 
     with SessionLocal() as db:
-        new_user = create_user(db, user_id, group_id,
-                               direction, embeddings, metadata)
-
+        try:
+            new_user = create_user(db, user_id, group_id,
+                                   direction, embeddings, metadata)
+        except Exception as e:
+            return Response(
+                headers=headers,
+                status_code=HTTPStatusCode.INTERNAL_SERVER_ERROR.value,
+                description=json.dumps(
+                    {'error': f"{ErrorCode.FAILED_TO_CREATE_USER.value}: {str(e)}"})
+            )
         if new_user is None:
             return Response(
                 headers=headers,
