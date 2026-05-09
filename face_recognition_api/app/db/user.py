@@ -53,7 +53,7 @@ def get_user_by_embedding(db: Session,
         ORDER BY similarity DESC
         LIMIT 5;
     """
-    result = db.execute(text(query), {'embeddings': embeddings.tolist(), 'group_id': group_id}).fetchone()  # noqa: E501
+    result = db.execute(text(query), {'embeddings': embeddings.tolist(), 'group_id': group_id})  # noqa: E501
     if result:
         return UserSimilarityResult.model_validate(result, from_attributes=True)
     return None
