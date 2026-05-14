@@ -4,7 +4,6 @@ import uuid
 from typing import Any
 from typing import TYPE_CHECKING
 
-from app.core.base import Base
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import JSONB
@@ -12,8 +11,10 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import relationship
+
+from face_recognition_api.app.core.base import Base
 if TYPE_CHECKING:
-    from app.domains.faces import Faces
+    from face_recognition_api.app.domains.faces import Faces
 
 
 class UsersInfo(Base):

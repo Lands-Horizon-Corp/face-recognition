@@ -62,6 +62,7 @@ allowed_origins_development = [
 
 
 class Settings(BaseSettings):
+    database_url: str
     PROJECT_NAME: str = 'Face Recognition API'
     APP_ENV: str = 'production'
     IS_LOCAL: bool = False
